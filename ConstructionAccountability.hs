@@ -1,9 +1,3 @@
--- Gover with two players. Player 1 thinks of a secret word
--- and uses its hash, and the game validator script, to lock
--- some funds (the prize) in a pay-to-script transaction output.
--- Player 2 guesses the word by attempting to spend the transaction
--- output. If the assessment of the compliance is true, the validator script releases the funds.
--- If it isn't, the funds stay locked.
 import Control.Monad (void)
 import Data.ByteString.Char8 qualified as C
 import Data.Map (Map)
@@ -35,13 +29,13 @@ type ConstructionAccountabilitySchema =
         Endpoint "lock" LockParams
         .\/ Endpoint "assessment" AssessmentParams
 
-data Game
-instance Scripts.ValidatorTypes Game where
-    type instance RedeemerType Game = QualityAssuranceRedeemer
-    type instance DatumType Game = LockDatum
+data Project
+instance Scripts.ValidatorTypes Project where
+    type instance RedeemerType Project = QualityAssuranceRedeemer
+    type instance DatumType Project = LockDatum
 
-constructionAccountabilityInstance :: Scripts.TypedValidator Game
-constructionAccountabilityInstance = Scripts.mkTypedValidator @Game
+constructionAccountabilityInstance :: Scripts.TypedValidator Project
+constructionAccountabilityInstance = Scripts.mkTypedValidator @Project
     $$(PlutusTx.compile [|| validateConformance ||])
     $$(PlutusTx.compile [|| wrap ||]) where
         wrap = Scripts.wrapValidator @LockDatum @QualityAssuranceRedeemer
@@ -50,11 +44,11 @@ constructionAccountabilityInstance = Scripts.mkTypedValidator @Game
 validateConformance :: LockDatum -> QualityAssuranceRedeemer -> ScriptContext -> Bool
 validateConformance (LockDatum compliance) (QualityAssuranceRedeemer assessment) _ = compliance == assessment
 
--- | The validator script of the game.
+-- | The validator script
 complianceValidator :: Validator
 complianceValidator = Scripts.validatorScript constructionAccountabilityInstance
 
--- | The address of the game (the hash of its validator script)
+-- | The address of the account (the hash of its validator script)
 accountAddress :: Address
 accountAddress = Ledger.scriptAddress complianceValidator
 
